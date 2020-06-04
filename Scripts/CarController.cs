@@ -135,8 +135,6 @@ public class CarController : MonoBehaviour
 
         currentGear = 0;
 
-        TilemapData tmd = TilemapData.Convert(gripTilemap);
-        gripTilemap = tmd.Create(gripTilemap);
     }
 
     // Update is called once per frame

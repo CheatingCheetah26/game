@@ -15,13 +15,9 @@ public class TilemapData
         TilemapData newTMD = new TilemapData();
         newTMD.size = tilemap.size;
         Debug.Log(tilemap.size);
-        for(int i=(int)(-tilemap.size.x/2+0.5); i < tilemap.size.x/2; i++)
+        foreach(var position in tilemap.cellBounds.allPositionsWithin)
         {
-            for(int j= (int)(-tilemap.size.y / 2+0.5);  j< tilemap.size.y / 2; j++)
-            {
-                Vector3Int pos = new Vector3Int(i, j, 0);
-                newTMD.tiles.Add(tilemap.GetTile(pos).name);
-            }
+            newTMD.tiles.Add(tilemap.GetTile(position).name);
         }
         return newTMD;
     }
@@ -38,26 +34,22 @@ public class TilemapData
             library.Add(tileBase.name, tileBase);
         }
 
+        Debug.Log("The boundaries are: ");
+        Debug.Log(templateTilemap.cellBounds.xMin+" "+ templateTilemap.cellBounds.xMax + " " + templateTilemap.cellBounds.yMin + " " + templateTilemap.cellBounds.yMax + " ");
+
 
         int h = 0;
-        for (int n = templateTilemap.cellBounds.xMin; n < templateTilemap.cellBounds.xMax; n++)
+        foreach (var position in templateTilemap.cellBounds.allPositionsWithin)
         {
-            for (int p = templateTilemap.cellBounds.yMin; p < templateTilemap.cellBounds.yMax; p++)
-            {
-                Debug.Log("adding tile");
-                Vector3Int pos = new Vector3Int(n, p, 0);
-                Debug.Log(pos);
-                Debug.Log(templateTilemap.GetTile(pos));
-                templateTilemap.SetTile(pos, library[tiles[h]]);
-                templateTilemap.SetColor(pos, new Color(h, h, h));
-                templateTilemap.RefreshTile(pos);
-                Debug.Log(templateTilemap.GetTile(pos));
-                
-                h++;
-            }
+            Debug.Log(position.ToString()+"/"+h);
+            
+            Debug.Log("There is the tile: " + templateTilemap.GetTile(position).name);
+            Debug.Log("I will replace it with: " + library[tiles[h]].name);
+            templateTilemap.SetTile(position, library[tiles[h]]);
+            h++;
         }
         Debug.Log("Done");
-        assetBundle.Unload(true);
+        assetBundle.Unload(false);
         return templateTilemap;
     }
 }
