@@ -38,6 +38,7 @@ public class AIController : MonoBehaviour
     public float frontDistance;
     public float rearDistance;
     bool leftOrRight;
+    float randomCorneringSpeed;
     RaycastHit2D frontHit;
     RaycastHit2D leftHit;
     RaycastHit2D rightHit;
@@ -69,7 +70,8 @@ public class AIController : MonoBehaviour
         rigidbody = GetComponent<Rigidbody2D>();
         trackDataHolder = GameObject.FindWithTag("TrackData").GetComponent<TrackDataHolder>();
         gripTilemap = GameObject.FindWithTag("TilemapGrip").GetComponent<Tilemap>();
-        StartCoroutine(leftOrRightChanger());
+        StartCoroutine(LeftOrRightChanger());
+        StartCoroutine(RandomCornering());
         engineSoundOffset += Random.Range(-0.05f,0.05f);
     }
 
@@ -130,7 +132,7 @@ public class AIController : MonoBehaviour
             }
         }
 
-        if(state != 3)
+        if(state != 3 && CommonReferences.sessionManager.hasRaceStarted)
         {
             wpCoord = wayPoint.pos;
             relative = transform.InverseTransformPoint(wpCoord);
@@ -158,7 +160,7 @@ public class AIController : MonoBehaviour
             }
             else
             {
-                impreciseSpeed = wayPoint.idealSpeed * Random.Range(0.85f, 1.01f);
+                impreciseSpeed = wayPoint.idealSpeed * ((1+GamePreferences.difficulty)/2) * randomCorneringSpeed * 0.9f;
             }
             if (impreciseSpeed < speedPercentage)
             {
@@ -169,10 +171,6 @@ public class AIController : MonoBehaviour
             {
                 gasInput = Mathf.Max(1 - (Mathf.Abs(angle) / 90f*1.5f), 0f);
                 brakeInput = 0f;
-            }
-            if (speedPercentage < 0.1f)
-            {
-                gasInput = 0.2f;
             }
 
             frontHit = Physics2D.CircleCast(transform.position+transform.right*0.075f, 0.04f, transform.right, frontDistance, AImask);
@@ -228,21 +226,29 @@ public class AIController : MonoBehaviour
                 {
                     if (leftHitBool)
                     {
-                        if (steeringInput == 1f)
+                        if (steeringInput != -1f || wayPoint.idealSpeed == 1)
                         {
-                            gasInput = gasInput / 2f;
+                            steeringInput = Mathf.Lerp(1f, steeringInput, leftHit.distance / sideDistance * 2f);
                         }
-                        steeringInput = Mathf.Lerp(1f, steeringInput, leftHit.distance / sideDistance * 2f);
+                        else
+                        {
+                            gasInput = 0f;
+                            steeringInput = Mathf.Lerp(-0.5f, steeringInput, leftHit.distance / sideDistance * 2f);
+                        }
                     }
                     else
                     {
                         if (rightHitBool)
                         {
-                            if (steeringInput == -1f)
+                            if (steeringInput != 1f || wayPoint.idealSpeed == 1)
                             {
-                                gasInput = gasInput / 2f;
+                                steeringInput = Mathf.Lerp(-1f, steeringInput, rightHit.distance / sideDistance * 2f);
                             }
-                            steeringInput = Mathf.Lerp(-1f, steeringInput, rightHit.distance / sideDistance * 2f);
+                            else
+                            {
+                                gasInput = 0f;
+                                steeringInput = Mathf.Lerp(0.5f, steeringInput, rightHit.distance / sideDistance * 2f);
+                            }
                         }
                     }
                 }
@@ -287,15 +293,29 @@ public class AIController : MonoBehaviour
             //calculating the translations and rotations to apply to the transform and applying them
             speed = speed + ((gasInput * accelerationMultiplier) * (1 - (speed / maxSpeed)) * Time.deltaTime);
             speed = speed - (brakeInput * brakeMultiplier * Time.deltaTime);
-            speed = speed * decelerationMultiplier;
-            rotation = (1 - (speed / maxSpeed)) * steeringInput * rotationMultiplier * -1f;
+            
+            rotation = Mathf.Max(1 - (speed / maxSpeed), 0.3f) * steeringInput * rotationMultiplier * -1f;
             rotation = rotation - (rotation * brakeInput * brakeRotationMultiplier * Time.deltaTime);
+
+            if (gasInput == 0f && brakeInput == 0f)
+            {
+                speed = speed * decelerationMultiplier;
+                rotation = rotation * 1.25f;
+            }
 
             if (speed / maxSpeed > 0.6f)
             {
-                rotation = rotation + (rotation * ((speed / maxSpeed) - 0.6f)) * 5;
+                //rotation = rotation + (rotation * ((speed / maxSpeed) - 0.6f)) * 5;
             }
 
+            if(GamePreferences.difficulty < 1)
+            {
+                rotation = rotation * ((2 + GamePreferences.difficulty) / 3f);
+            }
+            else
+            {
+                rotation = rotation * ((1 + GamePreferences.difficulty) / 2f);
+            }
         }
     }
 
@@ -333,7 +353,7 @@ public class AIController : MonoBehaviour
             audioClose.pitch = (rpm * engineSoundMultiplier) + engineSoundOffset;
             audioClose.pitch = audioClose.pitch * (1 + (oldDistance - distanceToPlayer) * 10);
 
-            audioClose.volume = Mathf.Max(1 - ((oldDistance - distanceToPlayer) * 3), 0f) * Mathf.Max(1 - (distanceToPlayer / 2), 0f);
+            audioClose.volume = Mathf.Max(1 - ((oldDistance - distanceToPlayer) * 3), 0f) * Mathf.Max(1 - (distanceToPlayer / 2), 0f)+0.3f;
             audioSource.volume = 1 - audioClose.volume;
         }
         else
@@ -397,7 +417,7 @@ public class AIController : MonoBehaviour
         wpObjective = futureWayPoint;
     }
 
-    IEnumerator leftOrRightChanger(){
+    IEnumerator LeftOrRightChanger(){
         while(true){
             yield return new WaitForSeconds(Random.Range(1, 3));
             if(Random.value>0.5){
@@ -405,6 +425,15 @@ public class AIController : MonoBehaviour
             }else{
                 leftOrRight = false;
             }
+        }
+    }
+
+    IEnumerator RandomCornering()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(Random.Range(1, 3));
+            randomCorneringSpeed = Random.Range(0.85f, 1.05f);
         }
     }
 

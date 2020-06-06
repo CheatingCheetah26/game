@@ -11,6 +11,7 @@ public class TrackData : ScriptableObject{
     public int lapCount;
 
     public Pit pit;
+    public WayPoint startFinishLine;
 
     public TilemapData trackTiles;
     public TilemapData gripTiles;

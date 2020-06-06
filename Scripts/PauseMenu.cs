@@ -13,6 +13,7 @@ public class PauseMenu : MonoBehaviour
     public GameObject steering;
     public GameObject autoBrake;
     public GameObject brakePedal;
+    public GameObject hiddenInPause;
     public TMP_Text controllerName;
     public bool connected = false;
 
@@ -22,6 +23,8 @@ public class PauseMenu : MonoBehaviour
     void Start()
     {
         Resume();
+        
+        GamePreferences.difficulty = 1f;
     }
 
     public void Pause()
@@ -31,7 +34,7 @@ public class PauseMenu : MonoBehaviour
         mixer.SetFloat("Volume", -80f);
         optionsMenu.SetActive(false);
         mainPause.SetActive(true);
-        inputs.SetActive(false);
+        hiddenInPause.SetActive(false);
     }
 
     public void Resume()
@@ -51,7 +54,7 @@ public class PauseMenu : MonoBehaviour
                 steering.SetActive(true);
             }
         }
-        
+        hiddenInPause.SetActive(true);
     }
 
     public void Options()
@@ -86,6 +89,22 @@ public class PauseMenu : MonoBehaviour
         brakePedal.SetActive(!trueOrFalse);
     }
 
+    public void SetDifficulty(float difficulty)
+    {
+        GamePreferences.difficulty = difficulty;
+        Debug.Log("Difficulty set to " + GamePreferences.difficulty);
+    }
+
+    public void SetAdaptativeAI(bool trueOrFalse)
+    {
+        GamePreferences.adaptativeAI = trueOrFalse;
+    }
+
+    public void CallStart()
+    {
+        CommonReferences.sessionManager.UserPressedStart();
+    }
+
     IEnumerator CheckForControllers()
     {
         int i = 0;
@@ -114,5 +133,4 @@ public class PauseMenu : MonoBehaviour
         yield return new WaitForEndOfFrame();
         Time.timeScale = 1f;
     }
-
 }

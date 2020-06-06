@@ -80,6 +80,8 @@ public class CarController : MonoBehaviour
     public float gasRotationMultiplier;
     public float brakeRotationMultiplier;
     public float rotationMultiplier;
+    public AnimationCurve downforce;
+    public float downforceMultiplier;
 
     float speed;
     float rotation;
@@ -135,6 +137,8 @@ public class CarController : MonoBehaviour
 
         currentGear = 0;
 
+        gripTilemap = GameObject.FindWithTag("TilemapGrip").GetComponent<Tilemap>();
+        camera = GameObject.FindWithTag("VC").GetComponent<CinemachineVirtualCamera>();
     }
 
     // Update is called once per frame
@@ -354,21 +358,24 @@ public class CarController : MonoBehaviour
 
             //new
 
-            speed = speed + ((gasInput*accelerationMultiplier) * (1 - (speed / maxSpeed)) * Time.deltaTime);
-            speed = speed - (brakeInput * brakeMultiplier * Time.deltaTime);
-            if(gasInput == 0f && brakeInput == 0f)
+            if (CommonReferences.sessionManager.hasRaceStarted)
             {
-                speed = speed * decelerationMultiplier;
+                speed = speed + ((gasInput * accelerationMultiplier) * (1 - (speed / maxSpeed)) * Time.deltaTime);
+                speed = speed - (brakeInput * brakeMultiplier * Time.deltaTime);
+                if (gasInput == 0f && brakeInput == 0f)
+                {
+                    speed = speed * decelerationMultiplier;
+
+                }
+                rotation = Mathf.Max(1 - (speed / maxSpeed), 0.3f) * steeringInput * rotationMultiplier * -1f;
+                rotation = rotation - (rotation * brakeInput * brakeRotationMultiplier * Time.deltaTime);
 
             }
-            rotation = (1 - (speed / maxSpeed)) * steeringInput * rotationMultiplier * -1f;
-            rotation = rotation - (rotation * brakeInput * brakeRotationMultiplier * Time.deltaTime);
-
 
             //adding downforce
-            if(speed/maxSpeed > 0.6f)
+            if (speed/maxSpeed > 0.6f)
             {
-                rotation = rotation + (rotation * ((speed / maxSpeed) - 0.6f))*5;
+                //rotation = rotation * downforce.Evaluate(speed / maxSpeed) * down;
             }
             if (speed < 0f)
             {
@@ -384,14 +391,14 @@ public class CarController : MonoBehaviour
             float speedPercentage = speed / maxSpeed;
 
             float rpm = gears[currentGear].GetRpm(speedPercentage);
-            if(rpm<0.4 && currentGear != 0)
+            if(rpm< 0.4 && currentGear != 0)
             {
                 currentGear--;
                 gearChangeDec.Play();
             }
             else
             {
-                if(rpm>0.8 && currentGear != gears.Count - 1)
+                if(rpm> 0.8 && currentGear != gears.Count - 1)
                 {
                     currentGear++;
                     gearChange.Play();

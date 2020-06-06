@@ -41,6 +41,7 @@ public class CarMainScript : MonoBehaviour
         sr_secondary.color = carData.team.colorSecondary;
 
         GetComponent<Rigidbody2D>().centerOfMass = new Vector2(-0.075f, 0);
+
     }
 
     // Update is called once per frame
@@ -61,7 +62,13 @@ public class CarMainScript : MonoBehaviour
         if (myTime != null)
         {
             CommonReferences.sessionManager.AddTime(myTime);
+            if (isPlayer && GamePreferences.adaptativeAI)
+            {
+                GamePreferences.difficulty = (myTime.time - 39f) / -6.5f;
+                Debug.Log("difficulty set to " + GamePreferences.difficulty);
+            }
             myTime.time = 0f;
+
         }
         if (myTime == null)
         {
